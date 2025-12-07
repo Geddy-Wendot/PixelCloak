@@ -1,0 +1,203 @@
+# SecureVent Architecture Documentation
+
+## System Overview
+
+SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend/Core Logic) and Python (Analysis Engine) with SQLite for audit logging.
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     USER (SecureVent Desktop App)                │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Java Swing UI  │ (MainFrame, JournalPanel, etc.)
+                    │  ("Book Mode")  │
+                    └────────┬────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+┌───────▼────────┐  ┌────────▼───────┐  ┌────────▼───────┐
+│ Steganography  │  │  AES Crypto    │  │ Image Analyzer │
+│   (LSB Algo)   │  │   (256-bit)    │  │  (Calls Python)│
+└────────┬───────┘  └────────┬───────┘  └────────┬───────┘
+         │                   │                   │
+         │                   └─────────┬─────────┘
+         │                             │
+         │         ┌──────────────────▼──────────────────┐
+         │         │   ProcessBuilder (IPC Bridge)       │
+         │         │   Spawns: python analyze_image.py   │
+         │         └──────────────────┬──────────────────┘
+         │                            │
+         │                   ┌────────▼────────┐
+         │                   │   Python 3      │
+         │                   │  (PIL + NumPy)  │
+         │                   │  Shannon Entropy│
+         │                   │   Calculator    │
+         │                   └────────┬────────┘
+         │                            │
+         │         ┌──────────────────▼──────────────────┐
+         │         │  Returns: SAFE / UNSAFE             │
+         │         │  + Entropy Score                    │
+         │         └──────────────────┬──────────────────┘
+         │                            │
+         └────────────────┬───────────┘
+                          │
+                  ┌───────▼────────┐
+                  │   Image File   │
+                  │  (PNG with     │
+                  │   hidden data) │
+                  └────────┬───────┘
+                           │
+                  ┌────────▼────────┐
+                  │    SQLite       │
+                  │  Audit Logs     │
+                  │  (Metadata)     │
+                  └─────────────────┘
+```
+
+## Component Details
+
+### 1. Presentation Layer (Java Swing)
+**Location:** `frontend/src/main/java/com/securevent/ui/`
+
+**Components:**
+- **MainFrame.java** – Main application window container
+- **JournalPanel.java** – Text editor for journal entries
+- **GalleryPanel.java** – Image selection and preview
+- **LoginPanel.java** – Password input + Duress Protocol detection
+
+### 2. Application Logic Layer (Java Core)
+**Location:** `frontend/src/main/java/com/securevent/core/`
+
+**Components:**
+
+#### A. Steganography Engine (Steganography.java)
+- LSB embedding and extraction
+- Capacity: 1 bit per pixel
+- Color change: 1/255th (~0.4%) - invisible
+
+#### B. Cryptography Engine (AESCrypto.java)
+- AES-256-CBC encryption
+- SHA-256 key derivation
+- Random IV generation
+
+#### C. Image Analyzer (ImageAnalyzer.java)
+- Calls Python subprocess
+- Passes image path via ProcessBuilder
+- Parses entropy score
+
+### 3. Analysis Engine (Python)
+**Location:** `backend/src/analyze_image.py`
+
+**Implementation:**
+- Shannon Entropy calculation
+- Image validation
+- Threshold-based safety check
+
+### 4. Persistence Layer (SQLite)
+**Location:** `data/securevent_audit.db`
+
+**Schema:**
+- audit_logs table (timestamp, operation, filename, entropy, status)
+- Performance indices
+- Reporting views
+
+## Inter-Process Communication (IPC)
+
+### Java ↔ Python Bridge
+
+**Method:** ProcessBuilder (OS-level process spawning)
+
+```java
+ProcessBuilder pb = new ProcessBuilder(
+    "python", 
+    "backend/src/analyze_image.py", 
+    imagePath
+);
+Process process = pb.start();
+BufferedReader reader = new BufferedReader(
+    new InputStreamReader(process.getInputStream())
+);
+String jsonResponse = reader.readLine();
+```
+
+## Data Flow: Hiding a Secret
+
+```
+User opens image
+    ↓
+Java loads PNG into BufferedImage
+    ↓
+Java calls ImageAnalyzer.analyzeImage(path)
+    ↓
+ProcessBuilder spawns: python analyze_image.py <path>
+    ↓
+Python calculates entropy → Returns JSON
+    ↓
+entropy >= 5.0?
+    YES: Continue ✓
+    NO: Show error ❌
+    ↓
+User types journal entry
+    ↓
+Java calls AESCrypto.encrypt(entry, password)
+    ↓
+Result: IV + ciphertext
+    ↓
+Java calls Steganography.hideData(image, encryptedBytes)
+    ↓
+Replace LSBs with encrypted data bits
+    ↓
+Save modified PNG to disk
+    ↓
+Write audit log
+```
+
+## Data Flow: Revealing a Secret
+
+```
+User loads PNG with hidden data
+    ↓
+Java loads PNG into BufferedImage
+    ↓
+User enters password
+    ↓
+Check if password == "1234"?
+    YES: Display decoy To-Do List → EXIT
+    NO: Continue ✓
+    ↓
+Java calls Steganography.extractData(image)
+    ↓
+Extract LSBs from Blue channel
+    ↓
+Java calls AESCrypto.decrypt(ciphertext, password)
+    ↓
+Display journal entry
+    ↓
+Write audit log
+```
+
+## Steganography (LSB Algorithm)
+
+**Formula:**
+$$\text{New\_Pixel} = (\text{Old\_Pixel} \, \& \, 0xFFFFFFFE) \, | \, \text{Secret\_Bit}$$
+
+**Effect:**
+- Color change: 1/255th ≈ 0.4% (invisible)
+- Data capacity: 1 bit per pixel
+- Example: 8 MP image ≈ 1 MB capacity
+
+## Entropy Analysis (Smart Defense)
+
+**Formula:**
+$$H(X) = -\sum_{i=0}^{255} p(i) \log_2 p(i)$$
+
+**Thresholds:**
+- Entropy < 5.0: UNSAFE ❌
+- Entropy ≥ 5.0: SAFE ✓
+
+---
+
+**Last Updated:** December 2024

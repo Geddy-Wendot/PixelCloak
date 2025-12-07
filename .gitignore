@@ -1,0 +1,89 @@
+# Build and Compilation
+*.class
+*.jar
+*.war
+*.ear
+*.exe
+*.zip
+target/
+build/
+dist/
+out/
+bin/
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.orig
+release.properties
+
+# Gradle
+.gradle/
+gradle-app.setting
+.gradletasknamecache
+
+# IDE and Editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/securevent_audit.db
+
+# Sensitive Data
+*.key
+*.pem
+*.pfx
+password.txt
+secrets.json
+
+# Application
+logs/
+*.log
+temp/
+tmp/
+cache/
+
+# OS Files
+Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+
+# Environment
+.env
+.env.local
+
+# Backup Files
+*.bak
+*.backup
+*~
+
+# Temporary
+*.tmp
+*.temp
+.tmp/
