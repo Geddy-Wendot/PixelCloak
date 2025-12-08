@@ -2,18 +2,22 @@
 
 ## Overview
 
-The backend is a Python-based analysis engine responsible for calculating Shannon Entropy to determine if an image is suitable for steganographic data hiding. It communicates with the Java frontend via subprocess calls.
+The backend is pure Java core library for SecureVent. It encapsulates all the criticall security and processing logic including AES-256 encryption, LSB Steganography, and Shannon Entropy Analysis.
 
 ## Structure
 
 ```
 backend/
 ├── src/
-│   └── analyze_image.py           # Main entropy calculator
-├── tests/
-│   └── test_entropy.py            # Unit tests
-├── requirements.txt               # Python dependencies
-└── README.md                      # Documentation
+│   └── java/
+│       └── com/
+│           └── securevent/
+│               └── core/
+│                   ├── AESCrypto.java      # AES-256-GCM Encryption
+│                   ├── Steganography.java  # LSB Image Encoding/Decoding
+│                   └── ImageAnalyzer.java  # Entropy & Complexity validation
+├── pom.xml                                 # Maven configuration
+└── README.md                               # This documentation
 ```
 
 ---
@@ -21,194 +25,62 @@ backend/
 ## Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- pip (Python package manager)
+- Java 17+ (JDK)
+- Maven 3.6+
 
 ### Installation
+Since this is a core lib, it's typically built as part of the main project or installed to your local repository.
 
-**1. Create Virtual Environment:**
+**1. Build the Backend:**
 ```bash
 cd backend
-python -m venv venv
+mvn clean install
 ```
 
-**2. Activate Virtual Environment:**
+## Core Modules
+**1. AESCrypto.java**
+- Handles the encryption of user journals before they touch the image.
+- Algorithm: AES-256-GCM (Galois/Counter Mode)
+- Key Derivation: PBKDF2WithHmacSHA256 (65,536 iterations)
 
-**Windows:**
-```bash
-venv\Scripts\activate
+**Features:**
+- Authenticated Encryption: Ensures data hasn't been tampered with.
+- Salt & IV: Automatically generates random Salt (16 bytes) and IV (12 bytes) for every entry.
+- Storage: Packs [Salt + IV + CipherText] into a single Base64 string.
+
+**Usage:**
+``` java
+String encrypted = AESCrypto.encrypt("My Secret Diary", "UserPassword123");
+String decrypted = AESCrypto.decrypt(encrypted, "UserPassword123")
 ```
 
-**macOS/Linux:**
-```bash
-source venv/bin/activate
+**2. Steganography.java**
+Implements the Least Significant Bit (LSB) algorithm to hide data imperceptibly.
+
+- Technique: Modifies the LSB of the Blue color channel.
+- Capacity: 1 bit per pixel.
+- Header: The first 32 pixels store the length of the data (integer) to ensure accurate extraction.
+
+**Usage:**
+```java
+// Hide text
+BufferedImage protectedImage = Steganography.embed(originalImage, encryptedString);
+
+// Reveal text
+String hiddenData = Steganography.extract(protectedImage);
+
 ```
+**3. ImageAnalyzer.java (Validation)**
+Replaces the Python analysis engine. It calculates the complexity of an image to prevent users from hiding data in simple images (like a solid white box) which would make the noise obvious.
 
-**3. Install Dependencies:**
-```bash
-pip install -r requirements.txt
-```
+- Method: Calculates Shannon Entropy on grayscale pixel intensity.
+- Threshold: > 4.5 is recommended for safe hiding.
 
-### Run Analysis
-
-**Command Line:**
-```bash
-python src/analyze_image.py --image path/to/image.png
-```
-
-**Output:**
-```json
-{
-  "status": "success",
-  "entropy": 5.872,
-  "safe": true,
-  "message": "Image is safe for data hiding"
+**Usage:**
+```java
+AnalysisResult result = ImageAnalyzer.analyze(image);
+if (result.isSafe()) {
+    System.out.println("Image is complex enough: " + result.entropy());
 }
 ```
-
----
-
-## Module: analyze_image.py
-
-### Function: `calculate_entropy()`
-
-This function computes the Shannon entropy of an image, a measure of its complexity and randomness. High-entropy images are better suited for steganography.
-
-```python
-from PIL import Image
-import numpy as np
-
-def calculate_entropy(image_path: str) -> float:
-    """Calculate the Shannon entropy of an image.
-
-    The image is converted to 8-bit grayscale to analyze its luminance
-    complexity. An entropy of 0.0 indicates a solid color, while a value
-    approaching 8.0 suggests high randomness.
-
-    Args:
-        image_path: Path to the image file.
-
-    Returns:
-        The entropy value as a float between 0.0 and 8.0.
-    """
-    # Convert image to 8-bit grayscale
-    img = Image.open(image_path).convert('L')
-    pixels = np.array(img).flatten()
-    
-    # Calculate probability distribution of pixel values
-    hist, _ = np.histogram(pixels, bins=256, range=(0, 256))
-    prob = hist / hist.sum()
-    
-    # Filter out zero probabilities to prevent log(0) errors
-    prob = prob[prob > 0]
-    
-    # Calculate Shannon entropy
-    entropy = -np.sum(prob * np.log2(prob))
-    return float(entropy)
-```
-
----
-
-## Dependencies
-
-### requirements.txt
-```
-Pillow>=9.0.0
-numpy>=1.21.0
-scipy>=1.7.0
-pytest>=7.0.0
-```
-
-### Why Each Dependency?
-
-| Package | Purpose |
-|---------|---------|
-| **Pillow** | Image loading and manipulation |
-| **NumPy** | Numerical computation |
-| **SciPy** | Scientific computing |
-| **pytest** | Unit testing framework |
-
----
-
-## Testing
-
-### Run Tests
-
-```bash
-pytest tests/test_entropy.py -v
-```
-
-### Test Coverage
-
-```bash
-pytest tests/test_entropy.py --cov=src
-```
-
----
-
-## Performance
-
-### Benchmark Results
-
-| Image Size | Processing Time | Memory |
-|------------|-----------------|--------|
-| 256×256 | ~50 ms | 2 MB |
-| 1024×1024 | ~150 ms | 8 MB |
-| 2048×2048 | ~300 ms | 16 MB |
-| 4096×4096 | ~500 ms | 32 MB |
-
-**Target:** All images analyzed in < 2 seconds
-
----
-
-## Integration with Java
-
-### Java ProcessBuilder Call
-
-```java
-ProcessBuilder pb = new ProcessBuilder(
-    "python",
-    "backend/src/analyze_image.py",
-    "--image", imageFile.getAbsolutePath(),
-    "--format", "json"
-);
-
-Process process = pb.start();
-BufferedReader reader = new BufferedReader(
-    new InputStreamReader(process.getInputStream())
-);
-String jsonResponse = reader.readLine();
-```
-
----
-
-## Troubleshooting
-
-### Issue: "ModuleNotFoundError: No module named 'PIL'"
-
-**Solution:**
-```bash
-pip install Pillow
-```
-
-### Issue: "entropy is nan"
-
-**Cause:** Image is completely solid color
-
-**Fix:**
-```python
-if np.isnan(entropy):
-    entropy = 0.0
-```
-
-### Issue: "Python not found when called from Java"
-
-**Solutions:**
-1. Add Python to system PATH
-2. Use absolute path: `C:\\Python39\\python.exe`
-
----
-
-**Last Updated:** December 2024
-**Python Version:** 3.8+
-**Status:** In Development
+Last Updated: December 2025 Status: Development.
