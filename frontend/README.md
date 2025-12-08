@@ -209,5 +209,5 @@ java -jar target/securevent-1.0.0-SNAPSHOT.jar
 
 ---
 
-**Last Updated:** December 2024
+**Last Updated:** December 2025
 **Status:** In Development

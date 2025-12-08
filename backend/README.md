@@ -70,35 +70,40 @@ python src/analyze_image.py --image path/to/image.png
 
 ## Module: analyze_image.py
 
-### Function: calculate_entropy()
+### Function: `calculate_entropy()`
 
-**Signature:**
-```python
-def calculate_entropy(image_path: str) -> float:
-    """
-    Calculate Shannon entropy of an image.
-    
-    Args:
-        image_path: Path to PNG image file
-    
-    Returns:
-        float: Entropy value between 0.0 and 8.0
-    """
-```
+This function computes the Shannon entropy of an image, a measure of its complexity and randomness. High-entropy images are better suited for steganography.
 
-**Implementation:**
 ```python
 from PIL import Image
 import numpy as np
 
 def calculate_entropy(image_path: str) -> float:
-    img = Image.open(image_path).convert('RGB')
+    """Calculate the Shannon entropy of an image.
+
+    The image is converted to 8-bit grayscale to analyze its luminance
+    complexity. An entropy of 0.0 indicates a solid color, while a value
+    approaching 8.0 suggests high randomness.
+
+    Args:
+        image_path: Path to the image file.
+
+    Returns:
+        The entropy value as a float between 0.0 and 8.0.
+    """
+    # Convert image to 8-bit grayscale
+    img = Image.open(image_path).convert('L')
     pixels = np.array(img).flatten()
     
+    # Calculate probability distribution of pixel values
     hist, _ = np.histogram(pixels, bins=256, range=(0, 256))
     prob = hist / hist.sum()
     
-    entropy = -np.sum(prob * np.log2(prob + 1e-10))
+    # Filter out zero probabilities to prevent log(0) errors
+    prob = prob[prob > 0]
+    
+    # Calculate Shannon entropy
+    entropy = -np.sum(prob * np.log2(prob))
     return float(entropy)
 ```
 
