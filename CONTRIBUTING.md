@@ -1,6 +1,6 @@
-# Contributing to SecureVent
+# Contributing to PixelCloak
 
-Thank you for your interest in contributing to SecureVent! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to PixelCloak! This document provides guidelines and instructions for contributing to the project.
 
 ## Code of Conduct
 
@@ -57,8 +57,8 @@ We are committed to providing a welcoming and inspiring community for all.
 ### Initial Setup
 
 ```bash
-git clone https://github.com/Geddy-Wendot/securevent_v1.git
-cd securevent_v1
+git clone https://github.com/Geddy-Wendot/PixelCloak.git
+cd PixelCloak
 git checkout -b feature/your-feature-name
 ```
 
