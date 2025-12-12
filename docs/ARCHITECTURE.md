@@ -144,8 +144,7 @@ Java calls Steganography.hideData(image, encryptedBytes)
 Replace LSBs with encrypted data bits
     ↓
 Save modified PNG to disk
-    ↓
-Write audit log
+    
 ```
 
 ## Data Flow: Revealing a Secret
@@ -168,8 +167,7 @@ Extract LSBs from Blue channel
 Java calls AESCrypto.decrypt(ciphertext, password)
     ↓
 Display journal entry
-    ↓
-Write audit log
+    
 ```
 
 ## Steganography (LSB Algorithm)

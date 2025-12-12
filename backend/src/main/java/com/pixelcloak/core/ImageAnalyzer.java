@@ -55,7 +55,7 @@ public class ImageAnalyzer {
         // to return entropy score
         public static double getEntropyScore(File imageFile) {
             try{
-                File scriptFile = new File("backend"+ File.separator+ "scripts",  "analyze_image.py");
+                File scriptFile = new File( "scripts",  "analyze_image.py");
                 
                 if (!scriptFile.exists()) {
                     System.err.println("JAVA ERROR: Script not found at " + scriptFile.getAbsolutePath());

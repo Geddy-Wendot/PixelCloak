@@ -18,8 +18,7 @@ frontend/
 │                   │   ├── MainFrame.java          # Main window
 │                   │   ├── JournalPanel.java       # Journal editor
 │                   │   └── LoginPanel.java         # Password & duress
-│                   └── utils/
-│                       └── Constants.java          # Configuration
+│                            
 ├── lib/                                             # External JARs
 ├── pom.xml                                          # Maven configuration
 └── README.md

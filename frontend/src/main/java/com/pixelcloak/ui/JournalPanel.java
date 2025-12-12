@@ -174,7 +174,7 @@ public class JournalPanel extends JPanel {
                     throw new IllegalStateException("Text too long for image uploaded.");
                 }
 
-                setStatus("Analyzing Image Complexity...", ACCENT_COLOR);
+                //check score
 
                 // 1. Get the actual score
                 double score = com.pixelcloak.core.ImageAnalyzer.getEntropyScore(JournalPanel.this.currentFile);

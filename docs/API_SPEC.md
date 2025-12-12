@@ -93,8 +93,8 @@ Total Size = 16 + ceil(plaintext.length / 16) * 16
 
 **Java Entry Point:**
 ```java
-// AESCrypto.encrypt(plaintext, passwordChars)
-// Returns: String (Base64 encoded)
+AESCrypto.encrypt(plaintext, passwordChars)
+ Returns: String (Base64 encoded)
 ```
 
 ### 3.2 Decryption (AES-256-CBC)
@@ -108,8 +108,8 @@ Total Size = 16 + ceil(plaintext.length / 16) * 16
 
 **Java Entry Point:**
 ```java
-// AESCrypto.decrypt(encrypted, password)
-// Returns: String (original plaintext)
+ AESCrypto.decrypt(encrypted, password)
+ Returns: String (original plaintext)
 ```
 
 ## 4. Steganography Operations
@@ -127,8 +127,8 @@ Total Size = 16 + ceil(plaintext.length / 16) * 16
 
 **Java Entry Point:**
 ```java
-// Steganography.hideData(image, encryptedBytes)
-// Returns: BufferedImage with hidden data
+ Steganography.hideData(image, encryptedBytes)
+ Returns: BufferedImage with hidden data
 ```
 
 ### 4.2 LSB Extraction (Revealing Data)
@@ -142,8 +142,8 @@ Total Size = 16 + ceil(plaintext.length / 16) * 16
 
 **Java Entry Point:**
 ```java
-// Steganography.extractData(image, dataLength)
-// Returns: byte[] (encrypted data)
+ Steganography.extractData(image, dataLength)
+ Returns: byte[] (encrypted data)
 ```
 
 ## 5. Error Codes and Status Messages
