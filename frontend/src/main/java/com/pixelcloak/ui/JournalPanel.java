@@ -126,7 +126,7 @@ public class JournalPanel extends JPanel {
         JFileChooser chooser = new JFileChooser();
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
-                File currentFile = chooser.getSelectedFile();
+                currentFile = chooser.getSelectedFile();
                 currentImage = ImageIO.read(currentFile);
 
                 if (currentImage == null) {
@@ -174,6 +174,23 @@ public class JournalPanel extends JPanel {
                     throw new IllegalStateException("Text too long for image uploaded.");
                 }
 
+                setStatus("Analyzing Image Complexity...", ACCENT_COLOR);
+
+                // 1. Get the actual score
+                double score = com.pixelcloak.core.ImageAnalyzer.getEntropyScore(JournalPanel.this.currentFile);
+
+                // 2. Check logic (Threshold 4.5)
+                if (score < 4.5) {
+                    throw new IllegalStateException("Image too simple (Score: " + String.format("%.2f", score) + "). Needs > 4.5");
+                }
+
+                // 3. Show the score to the user!
+                setStatus("Analysis Passed! Score: " + String.format("%.2f", score), SUCCESS_COLOR);
+                
+                // Slight delay so user sees the score before encryption starts
+                Thread.sleep(1000); 
+
+            
                 setStatus("Encrypting and Embedding...", ACCENT_COLOR);
 
                 // FIXED: Passed both 'text' and 'passwordChar'
@@ -232,7 +249,7 @@ public class JournalPanel extends JPanel {
                 // Duress Protocol Implementation
                 if (Arrays.equals(passwordChars, new char[]{'1', '2', '3', '4'})) {
                     Arrays.fill(passwordChars, ' '); // Clear password from memory
-                    return "--- DURESS MODE ACTIVE ---\n\nTODO LIST:\n1. Buy Groceries\n2. Call Dentist\n3. Pick up dry cleaning\n4. Email boss about report\n5. Water the plants";
+                    return "TODO LIST:\n1. Buy Groceries\n2. Call Dentist\n3. Pick up dry cleaning\n4. Email boss about report\n5. Water the plants";
                 }
 
                 setStatus("Extracting and decrypting...", ACCENT_COLOR);

@@ -9,7 +9,14 @@ public class MainFrame extends JFrame{
         setSize(700,600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        add(new JournalPanel());
-    }
+        // Start with LoginPanel
+        // When login is triggered, switch to JournalPanel
+        LoginPanel loginPanel = new LoginPanel(() -> {
+            setContentPane(new JournalPanel());
+            revalidate();
+            repaint();
+        });
 
+        add(loginPanel);
+    }
 }

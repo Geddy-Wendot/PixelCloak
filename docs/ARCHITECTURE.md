@@ -8,7 +8,7 @@ PixelCloak follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     USER (SecureVent Desktop App)                │
+│                     USER (PixelCloak Desktop App)                │
 └────────────────────────────┬────────────────────────────────────┘
                              │
                     ┌────────▼────────┐
@@ -59,7 +59,6 @@ PixelCloak follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
 **Components:**
 - **MainFrame.java** – Main application window container
 - **JournalPanel.java** – Text editor for journal entries
-- **GalleryPanel.java** – Image selection and preview
 - **LoginPanel.java** – Password input + Duress Protocol detection
 
 ### 2. Application Logic Layer (Java Core)

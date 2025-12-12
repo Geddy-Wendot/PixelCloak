@@ -17,7 +17,6 @@ frontend/
 │                   ├── ui/
 │                   │   ├── MainFrame.java          # Main window
 │                   │   ├── JournalPanel.java       # Journal editor
-│                   │   ├── GalleryPanel.java       # Image gallery
 │                   │   └── LoginPanel.java         # Password & duress
 │                   └── utils/
 │                       └── Constants.java          # Configuration

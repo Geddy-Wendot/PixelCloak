@@ -49,5 +49,42 @@ public class ImageAnalyzer {
             e.printStackTrace();
             return false;
         }
+
     }
+
+        // to return entropy score
+        public static double getEntropyScore(File imageFile) {
+            try{
+                File scriptFile = new File("backend"+ File.separator+ "scripts",  "analyze_image.py");
+                
+                if (!scriptFile.exists()) {
+                    System.err.println("JAVA ERROR: Script not found at " + scriptFile.getAbsolutePath());
+                    return -1.0;
+                }
+
+                String pythonPath = "C:\\Python313\\python.exe";
+
+                ProcessBuilder pb = new ProcessBuilder(pythonPath, scriptFile.getAbsolutePath(), imageFile.getAbsolutePath());
+                pb.redirectErrorStream(true);
+
+                Process process = pb.start();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line = reader.readLine(); 
+                process.waitFor();      
+                
+                
+                if (line != null && line.contains("|")) {
+                    String[] parts = line.split("\\|");
+                    if (parts.length > 1) {
+                        return Double.parseDouble(parts[1]);
+                    }
+                }
+                return -1.0;            
+            }catch (Exception e){
+                e.printStackTrace();
+                return -1.0;
+            }   
+        }
+
+        
 }
