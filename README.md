@@ -1,4 +1,4 @@
-PixelCloak - Steganographic Journal 
+# PixelCloak - Steganographic Journal 
 
 PixelCloak is a desktop application that allows you to hide encrypted journal entries within images using steganography. It provides a secure and private way to maintain a personal diary, with a "duress" feature for added security.
 
@@ -21,7 +21,6 @@ PixelCloak/
 
 -   **AES-256 Encryption:** Uses AES-GCM (Galois/Counter Mode) with PBKDF2 key derivation (600,000 iterations) to secure your text.
 -   **LSB Steganography:** Embeds encrypted data into the Least Significant Bits of the image pixels, making it invisible to the naked eye.
--   **Steganography:** Uses the Least Significant Bit (LSB) technique to embed data into images.
 -   **Image Entropy Analysis:** A Python backend analyzes images to ensure they are complex enough for secure data hiding.
 -   **Modern Swing UI:** A calming, book-themed interface for a pleasant user experience.
 

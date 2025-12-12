@@ -1,33 +1,37 @@
-# SecureVent Security Analysis
+# PixelCloak Security Analysis
 
 ## Executive Summary
 
-SecureVent is designed with a **Zero-Trust** security stance:
+PixelCloak is designed with a **Zero-Trust** security stance:
 - ✓ No network communication (air-gapped)
 - ✓ No cloud dependencies
-- ✓ Military-grade encryption (AES-256)
-- ✓ Threat model includes physical confrontation (Duress Protocol)
+- ✓ Military-grade encryption (AES-256-GCM)
+- ✓ Authenticated Encryption (AEAD)
 
 ## Cryptographic Foundation
 
-### AES-256 Encryption
+### AES-256-GCM Encryption
 
 **Standard:** FIPS 197 (Advanced Encryption Standard)
 
 **Key Properties:**
 - **Key Size:** 256 bits (2^256 possible keys)
-- **Block Size:** 128 bits
-- **Rounds:** 14
-- **Mode:** CBC (Cipher Block Chaining) with random IV
+- **Mode:** GCM (Galois/Counter Mode)
+- **Key Derivation:** PBKDF2-HMAC-SHA256 (600,000 iterations)
+- **Integrity:** 128-bit Authentication Tag
 
 **Resistance to Attacks:**
 - **Brute Force:** Computationally infeasible
-- **Side-Channel Attacks:** Mitigated by hardware acceleration
-- **Known Plaintext:** CBC mode prevents pattern leakage
+- **Chosen-Ciphertext:** GCM prevents tampering via auth tag
+- **Rainbow Tables:** Mitigated by unique 16-byte Salt per encryption
 
 ### Steganographic Concealment
 
 **Algorithm:** Least Significant Bit (LSB) Replacement
+
+**Implementation:**
+- **Channels:** Red, Green, Blue (3 bits per pixel)
+- **Header:** 32-bit length prefix (embedded in LSBs)
 
 **Mathematical Guarantee:**
 ```
@@ -67,14 +71,6 @@ Result: Invisible to human perception
 
 ### Physical Threats
 
-#### Physical Confrontation / Interrogation
-**Mitigation: Duress Protocol** ✓
-
-When user enters panic code ("1234"):
-1. **Does NOT** decrypt real journal
-2. Displays **harmless decoy** "To-Do List"
-3. **Provides Plausible Deniability**
-
 #### Device Theft
 **Mitigation:**
 - ✓ All data encrypted with user's password
@@ -89,8 +85,9 @@ When user enters panic code ("1234"):
 - Recommend: ≥ 12 characters, mixed case, numbers, symbols
 
 #### Image Tampering
-**Current Status:** ⚠️ No protection
-**Planned Mitigation:** Add SHA-256 file integrity check
+**Mitigation:** AES-GCM Authentication Tag
+- Any modification to the hidden bits causes decryption to fail (AEADBadTagException).
+- Ensures data integrity without external hashes.
 
 ## Memory Safety
 
@@ -110,32 +107,18 @@ When user enters panic code ("1234"):
 3. Minimize password lifetime in memory
 4. Use SecureRandom for IV/salt generation
 
-## Audit Logging
-
-### What Gets Logged (Metadata Only)
-- ✓ Timestamp
-- ✓ Operation type (HIDE, REVEAL)
-- ✓ Image filename
-- ✓ Entropy score
-- ✓ Status (SUCCESS/FAILED)
-
-### What Does NOT Get Logged ❌
-- ❌ User password
-- ❌ Journal content
-- ❌ Encryption key
-- ❌ Personal identifying information
-
 ## Compliance
 
 ### Standards Compliance
 - ✅ FIPS 197 (AES)
-- ✅ NIST SP 800-38A (CBC mode)
+- ✅ NIST SP 800-38D (GCM mode)
+- ✅ NIST SP 800-132 (PBKDF2)
 - ✅ OWASP Top 10
 - ✅ GDPR compliant
 
 ### Limitations
 
-SecureVent is **NOT**:
+PixelCloak is **NOT**:
 - A substitute for full-disk encryption
 - Protected against determined nation-state adversaries
 - A replacement for legal confidentiality protections
@@ -146,7 +129,6 @@ SecureVent is **NOT**:
 1. **Use Strong Passwords** – 12+ characters, mixed case, numbers, symbols
 2. **Keep Your Computer Secure** – OS/antivirus updates, avoid untrusted software
 3. **Back Up Your Password** – Use password manager or secure location
-4. **Be Aware of Duress Protocol** – Panic code is "1234"
 
 ### For Developers
 1. **Code Audits** – Regular security reviews

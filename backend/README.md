@@ -1,18 +1,19 @@
-# Backend - Python Analysis Engine
+# Backend - Core Logic & Analysis
 
 ## Overview
 
-The backend is pure Java core library for SecureVent. It encapsulates all the criticall security and processing logic including AES-256 encryption, LSB Steganography, and Shannon Entropy Analysis.
+The backend module contains the Core Java Logic (Encryption, Steganography) and the bridge to the Python Analysis Engine.
 
 ## Structure
 
 ```
 backend/
 ├── src/
-│   └── java/
-│       └── com/
-│           └── securevent/
-│               └── core/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── pixelcloak/
+│                   └── core/
 │                   ├── AESCrypto.java      # AES-256-GCM Encryption
 │                   ├── Steganography.java  # LSB Image Encoding/Decoding
 │                   └── ImageAnalyzer.java  # Entropy & Complexity validation
@@ -41,7 +42,7 @@ mvn clean install
 **1. AESCrypto.java**
 - Handles the encryption of user journals before they touch the image.
 - Algorithm: AES-256-GCM (Galois/Counter Mode)
-- Key Derivation: PBKDF2WithHmacSHA256 (65,536 iterations)
+- Key Derivation: PBKDF2WithHmacSHA256 (600,000 iterations)
 
 **Features:**
 - Authenticated Encryption: Ensures data hasn't been tampered with.
@@ -50,16 +51,17 @@ mvn clean install
 
 **Usage:**
 ``` java
-String encrypted = AESCrypto.encrypt("My Secret Diary", "UserPassword123");
-String decrypted = AESCrypto.decrypt(encrypted, "UserPassword123")
+char[] pass = "UserPassword123".toCharArray();
+String encrypted = AESCrypto.encrypt("My Secret Diary", pass);
+String decrypted = AESCrypto.decrypt(encrypted, pass);
 ```
 
 **2. Steganography.java**
 Implements the Least Significant Bit (LSB) algorithm to hide data imperceptibly.
 
-- Technique: Modifies the LSB of the Blue color channel.
-- Capacity: 1 bit per pixel.
-- Header: The first 32 pixels store the length of the data (integer) to ensure accurate extraction.
+- Technique: Modifies the LSB of Red, Green, and Blue channels.
+- Capacity: 3 bits per pixel.
+- Header: The first 32 bits (across channels) store the length of the data.
 
 **Usage:**
 ```java
@@ -78,9 +80,9 @@ Replaces the Python analysis engine. It calculates the complexity of an image to
 
 **Usage:**
 ```java
-AnalysisResult result = ImageAnalyzer.analyze(image);
-if (result.isSafe()) {
-    System.out.println("Image is complex enough: " + result.entropy());
+boolean isSafe = ImageAnalyzer.isImageSafe(imageFile);
+if (isSafe) {
+    System.out.println("Image is complex enough.");
 }
 ```
 Last Updated: December 2025 Status: Development.

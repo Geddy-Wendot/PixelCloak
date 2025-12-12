@@ -1,4 +1,4 @@
-# SecureVent API Specification
+# PixelCloak API Specification
 
 ## Java-Python Interface Contract
 
@@ -13,32 +13,28 @@ This document defines the communication protocol between the Java frontend and P
 **Invocation:**
 ```java
 ProcessBuilder pb = new ProcessBuilder(
-    "python", 
-    "backend/src/analyze_image.py", 
-    "--image", imagePath,
-    "--format", "json"
+    pythonPath, 
+    "scripts/analyze_image.py", 
+    imagePath
 );
+pb.redirectErrorStream(true);
 Process process = pb.start();
 ```
 
 **Arguments:**
 | Argument | Type | Required | Description |
 |----------|------|----------|-------------|
-| image | string | Yes | Absolute or relative path to PNG file |
-| format | string | No | Output format: "json" (default) or "text" |
+| pythonPath | string | Yes | Path to the Python executable |
+| script_path | string | Yes | Path to `analyze_image.py` |
+| image_path | string | Yes | Absolute path to image file |
 
 ### 1.2 Python → Java Response
 
-**Format:** JSON (UTF-8 encoded, single line)
+**Format:** Text (Pipe-delimited, e.g., "SAFE|7.12")
 
 **Success Response:**
-```json
-{
-  "status": "success",
-  "entropy": 5.872,
-  "safe": true,
-  "message": "Image is safe for data hiding"
-}
+```text
+SAFE|5.87
 ```
 
 **Failure Response:**
@@ -86,18 +82,19 @@ Total Size = 16 + ceil(plaintext.length / 16) * 16
 
 ## 3. Cryptography Operations
 
-### 3.1 Encryption (AES-256-CBC)
+### 3.1 Encryption (AES-256-GCM)
 
 **Process:**
-1. Derive 256-bit key from password using SHA-256 hash
-2. Generate random 16-byte Initialization Vector (IV)
-3. Encrypt plaintext with AES-256-CBC using derived key and random IV
-4. Concatenate IV + ciphertext and return
+1. Generate random 16-byte Salt.
+2. Derive 256-bit key from password + Salt using PBKDF2-HMAC-SHA256 (600,000 iterations).
+3. Generate random 12-byte Initialization Vector (IV).
+4. Encrypt plaintext with AES-256-GCM.
+5. Concatenate Salt + IV + Ciphertext (incl. Tag) and Base64 encode.
 
 **Java Entry Point:**
 ```java
-// AESCrypto.encrypt(plaintext, password)
-// Returns: byte[] with IV + ciphertext
+// AESCrypto.encrypt(plaintext, passwordChars)
+// Returns: String (Base64 encoded)
 ```
 
 ### 3.2 Decryption (AES-256-CBC)

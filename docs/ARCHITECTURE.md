@@ -1,8 +1,8 @@
-# SecureVent Architecture Documentation
+# PixelCloak Architecture Documentation
 
 ## System Overview
 
-SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend/Core Logic) and Python (Analysis Engine) with SQLite for audit logging.
+PixelCloak follows a **Hybrid Full-Stack Architecture** combining Java (Frontend/Core Logic) and Python (Analysis Engine).
 
 ### System Architecture Diagram
 
@@ -20,14 +20,14 @@ SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
         │                    │                    │
 ┌───────▼────────┐  ┌────────▼───────┐  ┌────────▼───────┐
 │ Steganography  │  │  AES Crypto    │  │ Image Analyzer │
-│   (LSB Algo)   │  │   (256-bit)    │  │  (Calls Python)│
+│ (LSB RGB Algo) │  │ (AES-GCM-256)  │  │  (Calls Script)│
 └────────┬───────┘  └────────┬───────┘  └────────┬───────┘
          │                   │                   │
          │                   └─────────┬─────────┘
          │                             │
          │         ┌──────────────────▼──────────────────┐
          │         │   ProcessBuilder (IPC Bridge)       │
-         │         │   Spawns: python analyze_image.py   │
+         │         │   Spawns: python scripts/analyze_image.py │
          │         └──────────────────┬──────────────────┘
          │                            │
          │                   ┌────────▼────────┐
@@ -38,8 +38,8 @@ SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
          │                   └────────┬────────┘
          │                            │
          │         ┌──────────────────▼──────────────────┐
-         │         │  Returns: SAFE / UNSAFE             │
-         │         │  + Entropy Score                    │
+         │         │  Returns: SAFE|SCORE                │
+         │         │  or UNSAFE|SCORE                    │
          │         └──────────────────┬──────────────────┘
          │                            │
          └────────────────┬───────────┘
@@ -48,12 +48,6 @@ SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
                   │   Image File   │
                   │  (PNG with     │
                   │   hidden data) │
-                  └────────┬───────┘
-                           │
-                  ┌────────▼────────┐
-                  │    SQLite       │
-                  │  Audit Logs     │
-                  │  (Metadata)     │
                   └─────────────────┘
 ```
 
@@ -75,13 +69,13 @@ SecureVent follows a **Hybrid Full-Stack Architecture** combining Java (Frontend
 
 #### A. Steganography Engine (Steganography.java)
 - LSB embedding and extraction
-- Capacity: 1 bit per pixel
-- Color change: 1/255th (~0.4%) - invisible
+- **Algorithm:** LSB (Least Significant Bit) modification.
+- **Channels:** Embeds data in Red, Green, and Blue channels sequentially.
+- **Capacity:** 3 bits per pixel (1 bit per channel).
 
 #### B. Cryptography Engine (AESCrypto.java)
-- AES-256-CBC encryption
-- SHA-256 key derivation
-- Random IV generation
+- **Algorithm:** AES-256-GCM (Galois/Counter Mode).
+- **Key Derivation:** PBKDF2WithHmacSHA256 (600,000 iterations).
 
 #### C. Image Analyzer (ImageAnalyzer.java)
 - Calls Python subprocess
@@ -182,12 +176,12 @@ Write audit log
 ## Steganography (LSB Algorithm)
 
 **Formula:**
-$$\text{New\_Pixel} = (\text{Old\_Pixel} \, \& \, 0xFFFFFFFE) \, | \, \text{Secret\_Bit}$$
+For each channel (Red, Green, Blue) of a pixel:
+$$\text{New\_Channel} = (\text{Old\_Channel} \, \& \, 0xFE) \, | \, \text{Secret\_Bit}$$
 
 **Effect:**
-- Color change: 1/255th ≈ 0.4% (invisible)
-- Data capacity: 1 bit per pixel
-- Example: 8 MP image ≈ 1 MB capacity
+- Color change: +/- 1 value on 0-255 scale (invisible to human eye).
+- Data capacity: 3 bits per pixel.
 
 ## Entropy Analysis (Smart Defense)
 

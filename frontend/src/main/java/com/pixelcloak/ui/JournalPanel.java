@@ -1,6 +1,6 @@
 package com.pixelcloak.ui;
 
-import com.pixelcloak.core.AESCrypto;
+import com.pixelcloak.core.AESCrypto; 
 import com.pixelcloak.core.Steganography;
 
 import javax.imageio.ImageIO;
@@ -227,6 +227,12 @@ public class JournalPanel extends JPanel {
                 char[] passwordChars = passField.getPassword();
                 if (passwordChars.length == 0) {
                     throw new IllegalStateException("Password is required.");
+                }
+
+                // Duress Protocol Implementation
+                if (Arrays.equals(passwordChars, new char[]{'1', '2', '3', '4'})) {
+                    Arrays.fill(passwordChars, ' '); // Clear password from memory
+                    return "--- DURESS MODE ACTIVE ---\n\nTODO LIST:\n1. Buy Groceries\n2. Call Dentist\n3. Pick up dry cleaning\n4. Email boss about report\n5. Water the plants";
                 }
 
                 setStatus("Extracting and decrypting...", ACCENT_COLOR);

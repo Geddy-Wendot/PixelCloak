@@ -1,8 +1,8 @@
-# Frontend - SecureVent UI (Java Swing)
+# Frontend - PixelCloak UI (Java Swing)
 
 ## Overview
 
-The frontend is a Java Swing application that provides the user interface for SecureVent. It implements a "Book Mode" aesthetic with calming colors and intuitive workflow for hiding and revealing encrypted journal entries in images.
+The frontend is a Java Swing application that provides the user interface for PixelCloak. It implements a modern dark-themed interface for hiding and revealing encrypted journal entries in images.
 
 ## Structure
 
@@ -12,17 +12,13 @@ frontend/
 │   └── main/
 │       └── java/
 │           └── com/
-│               └── securevent/
+│               └── pixelcloak/
 │                   ├── App.java                    # Entry point
 │                   ├── ui/
 │                   │   ├── MainFrame.java          # Main window
 │                   │   ├── JournalPanel.java       # Journal editor
 │                   │   ├── GalleryPanel.java       # Image gallery
 │                   │   └── LoginPanel.java         # Password & duress
-│                   ├── core/
-│                   │   ├── Steganography.java      # LSB encoding/decoding
-│                   │   ├── AESCrypto.java          # Encryption/decryption
-│                   │   └── ImageAnalyzer.java      # Entropy validation
 │                   └── utils/
 │                       └── Constants.java          # Configuration
 ├── lib/                                             # External JARs
@@ -50,7 +46,7 @@ mvn clean compile
 
 **Using Maven:**
 ```bash
-mvn exec:java -Dexec.mainClass="com.securevent.App"
+mvn exec:java -Dexec.mainClass="com.pixelcloak.App"
 ```
 
 **Direct Java:**
@@ -74,47 +70,23 @@ public class App {
 }
 ```
 
-### 2. MainFrame.java (Main Window)
-**Purpose:** Container for all UI panels and navigation
+### 2. JournalPanel.java (Main Interface)
+**Purpose:** The primary interface handling image loading, text editing, and encryption operations.
 
 **Features:**
-- Tab-based navigation
-- Status bar
-- Menu bar (File, Edit, Help)
-- Responsive layout
+- **Split View:** Text editor on left, Image preview on right.
+- **Image Loader:** Validates and displays PNG/JPG images.
+- **Security Controls:** Password input and action buttons (Load, Hide, Reveal).
+- **Feedback:** Status bar with color-coded success/error messages.
+- **Duress Protocol:** Entering "1234" triggers a decoy mode.
 
-### 3. JournalPanel.java (Journal Editor)
-**Purpose:** Text editor for writing journal entries
-
-**Features:**
-- Rich text editing
-- Character count
-- Word count
-- Search functionality
-
-### 4. GalleryPanel.java (Image Selection)
-**Purpose:** Browse and select images
-
-**Features:**
-- Thumbnail previews
-- Entropy score display
-- Metadata display
-
-### 5. LoginPanel.java (Password & Duress)
-**Purpose:** Handle authentication
-
-**Features:**
-- Password field (masked input)
-- Panic code detection ("1234")
-- Duress mode activation
-
-### 6. Steganography.java (LSB Algorithm)
-**Purpose:** Hide and extract encrypted data in images
+### 3. Steganography.java (LSB Algorithm)
+**Purpose:** Embeds encrypted bytes into image pixels using 3-bit LSB (Red, Green, Blue channels).
 
 **Methods:**
 ```java
-public BufferedImage hideData(BufferedImage image, byte[] data)
-public byte[] extractData(BufferedImage image, int length)
+public static BufferedImage embed(BufferedImage image, String message)
+public static String extract(BufferedImage image)
 ```
 
 ### 7. AESCrypto.java (Encryption)

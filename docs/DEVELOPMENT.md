@@ -1,4 +1,4 @@
-# Backend Development Guide
+# PixelCloak Backend Development Guide
 
 ## Python Analysis Engine
 
@@ -62,7 +62,7 @@ pytest>=7.0.0
 ### Command Line
 
 ```bash
-python src/analyze_image.py --image path/to/image.png --format json
+python src/analyze_image.py path/to/image.png
 ```
 
 **Output (Success):**
@@ -78,7 +78,7 @@ python src/analyze_image.py --image path/to/image.png --format json
 ### Python API
 
 ```python
-from analyze_image import calculate_entropy
+from scripts.analyze_image import calculate_entropy
 
 entropy = calculate_entropy("path/to/image.png")
 if entropy >= 5.0:
@@ -122,9 +122,8 @@ Normalize histogram by dividing by total pixel count to get probability of each 
 **Step 4: Calculate Shannon Entropy**
 Apply formula: $H = -\sum p(i) \log_2(p(i))$ with epsilon guard to prevent log(0) errors.
 
-**Python Implementation:** See `backend/src/analyze_image.py`
+**Python Implementation:** See `scripts/analyze_image.py`
 
----
 
 ## Testing
 
