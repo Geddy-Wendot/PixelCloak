@@ -1,13 +1,13 @@
-# SecureVent - Steganographic Journal
+PixelCloak - Steganographic Journal 
 
-SecureVent is a desktop application that allows you to hide encrypted journal entries within images using steganography. It provides a secure and private way to maintain a personal diary, with a "duress" feature for added security.
+PixelCloak is a desktop application that allows you to hide encrypted journal entries within images using steganography. It provides a secure and private way to maintain a personal diary, with a "duress" feature for added security.
 
 The project consists of a Java Swing frontend for the user interface and a Python backend for image analysis.
 
 ## Project Structure
 
 ```
-securevent_v1/
+PixelCloak/
 ├── backend/
 │   ├── src/
 │   └── ... (see backend/README.md for details)
@@ -19,12 +19,11 @@ securevent_v1/
 
 ## Features
 
--   **Rich Text Journaling:** Write and format your journal entries with an intuitive editor.
--   **AES-256 Encryption:** All entries are encrypted with a user-provided password before being hidden.
+-   **AES-256 Encryption:** Uses AES-GCM (Galois/Counter Mode) with PBKDF2 key derivation (600,000 iterations) to secure your text.
+-   **LSB Steganography:** Embeds encrypted data into the Least Significant Bits of the image pixels, making it invisible to the naked eye.
 -   **Steganography:** Uses the Least Significant Bit (LSB) technique to embed data into images.
 -   **Image Entropy Analysis:** A Python backend analyzes images to ensure they are complex enough for secure data hiding.
--   **Duress Mode:** A special "panic code" can be used to open a decoy journal, protecting your real entries under coercion.
--   **Book-like UI:** A calming, book-themed interface for a pleasant user experience.
+-   **Modern Swing UI:** A calming, book-themed interface for a pleasant user experience.
 
 ## Getting Started
 
@@ -32,8 +31,17 @@ securevent_v1/
 
 -   Java 17+ (JDK)
 -   Maven 3.6+
--   Python 3.8+
--   pip
+-   Python 3.10+
+-   IntelliJ IDEA: Recommended IDE for running this project.
+
+### Installation and Setup
+
+**1.**Configure Python Environment
+The application requires the Python `Pillow` library to perform image analysis. 
+Open your terminal and run
+```bash
+pip install pillow
+```
 
 ### Running the Application
 
@@ -43,20 +51,6 @@ The application is composed of two main parts: the Java frontend and the Python 
 
 Navigate to the backend directory and install the required Python packages. Remember to activate the virtual environment first (`venv\Scripts\activate` on Windows or `source venv/bin/activate` on macOS/Linux).
 
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
-**2. Build and Run the Frontend**
-
-Navigate to the frontend directory, build, and run the Java application using Maven.
-
-```bash
-cd frontend
-mvn clean package
-mvn exec:java -Dexec.mainClass="com.securevent.App"
-```
 
 The Java application will launch, and it will automatically call the Python script for image analysis when needed. Ensure that the `python` command is available in your system's PATH.
 

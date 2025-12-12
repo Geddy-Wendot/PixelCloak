@@ -1,6 +1,5 @@
 package com.pixelcloak.ui;
 
-
 import com.pixelcloak.core.AESCrypto;
 import com.pixelcloak.core.Steganography;
 
@@ -11,16 +10,16 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
-public class JournalPanel extends JPanel{
+public class JournalPanel extends JPanel {
     // UI components
-    private JTextArea textArea;
+    private final JTextArea textArea;
     private final JPasswordField passField;
     private final JLabel statusLabel;
-    private final JButton loadBtn, saveBtn, revealBtn;
     private final ImagePanel ImagePreviewPanel;
 
-    //logic data
+    // Logic data
     private BufferedImage currentImage;
     private File currentFile;
 
@@ -31,38 +30,39 @@ public class JournalPanel extends JPanel{
     final Color SUCCESS_COLOR = new Color(152, 195, 121); // Soft Green
     final Color ERROR_COLOR = new Color(224, 108, 117); // Soft Red
 
-    public JournalPanel(){
+    @SuppressWarnings("unused")
+    public JournalPanel() {
         setLayout(new BorderLayout(15, 15));
         setBackground(BG_COLOR);
-        //setBorder(new EmptyBorder(20,20,20,20));
 
-        //header
-        JPanel PanelHeader= new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // Header
+        JPanel PanelHeader = new JPanel(new FlowLayout(FlowLayout.LEFT));
         PanelHeader.setOpaque(false);
         JLabel title = new JLabel("PixelCloak");
-        title.setFont(new Font("Segue UI",Font.BOLD, 24));
+        title.setFont(new Font("Segue UI", Font.BOLD, 24));
         title.setForeground(ACCENT_COLOR);
         PanelHeader.add(title);
         add(PanelHeader, BorderLayout.NORTH);
 
-        //body. split it into two
-        //left(text)
-        JTextArea TextArea = new JTextArea("Write you thoughts here....");
-        TextArea.setBackground(new Color(33, 37, 43) );
-        TextArea.setForeground(ACCENT_COLOR);
-        TextArea.setLineWrap(true);
-        TextArea.setWrapStyleWord(true);
-        TextArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Body: Split pane
+        // Left (Text Area) -> FIXED: Assigned to class field 'textArea', not local 'TextArea'
+        textArea = new JTextArea("Write your thoughts here....");
+        textArea.setBackground(new Color(33, 37, 43));
+        textArea.setForeground(TEXT_COLOR); // Changed to TEXT_COLOR for better readability
+        textArea.setCaretColor(Color.WHITE);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JScrollPane textScroll = new JScrollPane(textArea);
-        textScroll.setBorder(BorderFactory.createLineBorder(new Color(80,80,80)));
+        textScroll.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 80)));
 
-        //image preview section
+        // Image preview section
         ImagePreviewPanel = new ImagePanel();
-        ImagePreviewPanel.setBackground(new Color(33,37,43));
-        ImagePreviewPanel.setBorder(BorderFactory.createLineBorder(new Color(80,80,80)));
+        ImagePreviewPanel.setBackground(new Color(33, 37, 43));
+        ImagePreviewPanel.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 80)));
 
-        //code for the horizontal split that separates the panels.
+        // Split pane
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, textScroll, ImagePreviewPanel);
         splitPane.setBackground(BG_COLOR);
         splitPane.setResizeWeight(0.5);
@@ -71,37 +71,37 @@ public class JournalPanel extends JPanel{
 
         add(splitPane, BorderLayout.CENTER);
 
-        //controls
+        // Controls
         JPanel bottomContainer = new JPanel();
         bottomContainer.setLayout(new BoxLayout(bottomContainer, BoxLayout.Y_AXIS));
         bottomContainer.setOpaque(false);
 
-        // password section
+        // Password section
         JPanel passPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         passPanel.setOpaque(false);
-        JLabel passLabel = new JLabel("Encrypting Pass cord");
+        JLabel passLabel = new JLabel("Encryption Password:");
         passLabel.setForeground(TEXT_COLOR);
         passField = new JPasswordField(20);
         passPanel.add(passLabel);
         passPanel.add(passField);
 
-        //buttons
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20,10));
+        // Buttons
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setOpaque(false);
 
-        loadBtn = createStyledButton("Load Image");
-        saveBtn = createStyledButton("Hide and Save");
-        revealBtn = createStyledButton("Reveal Text");
+        JButton loadBtn = createStyledButton("Load Image");
+        JButton saveBtn = createStyledButton("Hide and Save");
+        JButton revealBtn = createStyledButton("Reveal Text");
 
         btnPanel.add(loadBtn);
         btnPanel.add(saveBtn);
         btnPanel.add(revealBtn);
 
-        //status bar
+        // Status bar
         statusLabel = new JLabel("Ready to load an Image and start");
         statusLabel.setForeground(Color.GRAY);
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        statusLabel.setBorder(new EmptyBorder(10,0,0,0));
+        statusLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
         bottomContainer.add(passPanel);
         bottomContainer.add(btnPanel);
@@ -109,90 +109,114 @@ public class JournalPanel extends JPanel{
 
         add(bottomContainer, BorderLayout.SOUTH);
 
-        //event listeners
+        // Event listeners
         loadBtn.addActionListener(e -> loadImage());
         saveBtn.addActionListener(e -> hideAndSave());
         revealBtn.addActionListener(e -> revealText());
-
     }
-    // the main logic
-    private void setStatus(String msg,Color color ){
+
+    // Helper to update status
+    private void setStatus(String msg, Color color) {
         statusLabel.setText(msg);
         statusLabel.setForeground(color);
     }
-    // loadImage logic
-    private void loadImage(){
-        JFileChooser chooser= new JFileChooser();
-        if(chooser.showOpenDialog(this)== JFileChooser.APPROVE_OPTION){
+
+    // Load Image Logic
+    private void loadImage() {
+        JFileChooser chooser = new JFileChooser();
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
-                currentFile = chooser.getSelectedFile();
+                File currentFile = chooser.getSelectedFile();
                 currentImage = ImageIO.read(currentFile);
 
-                //to update the image preview section
+                if (currentImage == null) {
+                    throw new Exception("File is not a valid image.");
+                }
+
+                // Update the image preview section
                 ImagePreviewPanel.setImage(currentImage);
                 ImagePreviewPanel.repaint();
 
-                setStatus("Image Loaded: "+ currentFile.getName(), SUCCESS_COLOR);
-            }catch (Exception e){
-                setStatus("Error Loading Image ", ERROR_COLOR);
+                setStatus("Image Loaded: " + currentFile.getName(), SUCCESS_COLOR);
+            } catch (Exception e) {
+                setStatus("Error Loading Image", ERROR_COLOR);
             }
         }
     }
 
-    //hide and save logic
-    private void hideAndSave(){
-        //this action makes it run in the background to avoid it from stopping the UI
-        new SwingWorker<File, Void>(){
-            protected File doInBackground() throws Exception{
-                if(currentImage == null){
-                    throw new IllegalStateException("Please load and image");
+    // Hide and Save Logic
+    private void hideAndSave() {
+        new SwingWorker<File, Void>() {
+            @Override
+            protected File doInBackground() throws Exception {
+                if (currentImage == null) {
+                    throw new IllegalStateException("Please load an image first.");
                 }
                 String text = textArea.getText();
                 char[] passwordChar = passField.getPassword();
 
-                if(text.isEmpty()|| passwordChar.length==0){
-                    throw new IllegalStateException("Text and Password needed");
+                if (text.isEmpty() || passwordChar.length == 0) {
+                    throw new IllegalStateException("Text and Password needed.");
                 }
-                //to prevent data from being lost due to overflow
-                long maxBytes = ((long) currentImage.getWidth()*currentImage.getHeight()*3/8)-4;
-                if(text.getBytes(StandardCharsets.UTF_8).length>maxBytes){
-                    throw new IllegalStateException("Text too long for image uploaded");
+
+                setStatus("Analyzing Image Complexity...", ACCENT_COLOR);
+
+                // call the python analyzer
+                boolean isSafe = com.pixelcloak.core.ImageAnalyzer.isImageSafe(currentFile);
+
+                if (!isSafe){
+                    throw new IllegalStateException("Image too simple. Hiding data here is risky");
                 }
-                setStatus("Encryption and Embedding.", ACCENT_COLOR);
-                String encrypted = AESCrypto.encrypt(text, new String(passwordChar));
-                java.util.Arrays.fill(passwordChar, '');
+
+                // Prevent data overflow
+                long maxBytes = ((long) currentImage.getWidth() * currentImage.getHeight() * 3 / 8) - 4;
+                if (text.getBytes(StandardCharsets.UTF_8).length > maxBytes) {
+                    throw new IllegalStateException("Text too long for image uploaded.");
+                }
+
+                setStatus("Encrypting and Embedding...", ACCENT_COLOR);
+
+                // FIXED: Passed both 'text' and 'passwordChar'
+                String encrypted = AESCrypto.encrypt(text, passwordChar);
+
+                // Clear password from memory
+                Arrays.fill(passwordChar, ' ');
 
                 BufferedImage stegImage = Steganography.embed(currentImage, encrypted);
+
                 JFileChooser chooser = new JFileChooser();
-                if(chooser.showSaveDialog(JournalPanel.this)== JFileChooser.APPROVE_OPTION){
+                if (chooser.showSaveDialog(JournalPanel.this) == JFileChooser.APPROVE_OPTION) {
                     File output = chooser.getSelectedFile();
-                    if(!output.getName().toLowerCase().endsWith("png")){
-                        output = new File(output.getParent(),output.getName() + ".png");
+                    if (!output.getName().toLowerCase().endsWith(".png")) {
+                        output = new File(output.getParent(), output.getName() + ".png");
                     }
+                    assert stegImage != null;
                     ImageIO.write(stegImage, "png", output);
                     return output;
                 }
                 return null;
             }
 
-            protected  void done(){
-                try{
+            @Override
+            protected void done() {
+                try {
                     File savedFile = get();
-                    if(savedFile != null){
-                        setStatus("Success, file saved to: "+ savedFile.getName(), SUCCESS_COLOR);
-
-                    }else {
+                    if (savedFile != null) {
+                        setStatus("Success! Saved to: " + savedFile.getName(), SUCCESS_COLOR);
+                    } else {
                         setStatus("Save Canceled", Color.GRAY);
                     }
-                }catch (Exception e){
-                    String message = e.getCause()!=null ? e.getCause().getMessage(): e.getMessage();
-                    setStatus("Error "+message, ERROR_COLOR);
+                } catch (Exception e) {
+                    String message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                    setStatus("Error: " + message, ERROR_COLOR);
+                    //noinspection CallToPrintStackTrace
+                    e.printStackTrace();
                 }
             }
         }.execute();
     }
 
-    // reveal logic
+    // Reveal Logic
     private void revealText() {
         new SwingWorker<String, Void>() {
             @Override
@@ -206,13 +230,16 @@ public class JournalPanel extends JPanel{
                 }
 
                 setStatus("Extracting and decrypting...", ACCENT_COLOR);
+
                 String encrypted = Steganography.extract(currentImage);
                 if (encrypted == null) {
                     throw new IllegalStateException("No hidden data found or image is corrupt.");
                 }
 
-                String decrypted = AESCrypto.decrypt(encrypted, new String(passwordChars));
-                java.util.Arrays.fill(passwordChars, ' '); // Clear password from memory
+                // FIXED: Passed both 'encrypted' data and 'passwordChars'
+                String decrypted = AESCrypto.decrypt(encrypted, passwordChars);
+
+                Arrays.fill(passwordChars, ' '); // Clear password
                 return decrypted;
             }
 
@@ -223,26 +250,26 @@ public class JournalPanel extends JPanel{
                     textArea.setText(decryptedText);
                     setStatus("Decryption Successful!", SUCCESS_COLOR);
                 } catch (Exception e) {
-                    // GCM authentication failure (wrong password) throws AEADBadTagException
                     if (e.getCause() instanceof javax.crypto.AEADBadTagException) {
-                        setStatus("Access Denied: Wrong Password or corrupt data.", ERROR_COLOR);
+                        setStatus("Access Denied: Wrong Password.", ERROR_COLOR);
                     } else {
                         String message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
                         setStatus("Error: " + message, ERROR_COLOR);
                     }
-                    textArea.setText(""); // Clear text area on failure
+                    textArea.setText("");
                 }
             }
         }.execute();
     }
 
-    //method helper for the createStyledButton method
+    // Helper for styled buttons
     private JButton createStyledButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segue UI", Font.BOLD, 12));
         btn.setFocusPainted(false);
         btn.setBackground(Color.WHITE);
         btn.setForeground(BG_COLOR);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ACCENT_COLOR, 1),
                 BorderFactory.createEmptyBorder(8, 20, 8, 20)
@@ -250,7 +277,8 @@ public class JournalPanel extends JPanel{
         return btn;
     }
 
-    class ImagePanel extends JPanel {
+    // Custom Image Panel
+    static class ImagePanel extends JPanel {
         private BufferedImage img;
 
         public void setImage(BufferedImage img) {
@@ -261,7 +289,6 @@ public class JournalPanel extends JPanel{
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             if (img != null) {
-                // Calculate scaling logic to fit image within panel (Aspect Ratio preserved)
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
@@ -274,17 +301,17 @@ public class JournalPanel extends JPanel{
                 int newW = (int) (imgW * scale);
                 int newH = (int) (imgH * scale);
 
-                // Center the image
                 int x = (panelW - newW) / 2;
                 int y = (panelH - newH) / 2;
 
                 g2.drawImage(img, x, y, newW, newH, null);
             } else {
-                // Draw placeholder text if no image
                 g.setColor(Color.GRAY);
-                g.drawString("No Image Loaded", getWidth() / 2 - 50, getHeight() / 2);
+                String msg = "No Image Loaded";
+                FontMetrics fm = g.getFontMetrics();
+                int textWidth = fm.stringWidth(msg);
+                g.drawString(msg, (getWidth() - textWidth) / 2, getHeight() / 2);
             }
         }
     }
 }
-
