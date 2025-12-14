@@ -266,4 +266,4 @@ Instead, email with details:
 **Last Updated:** December 2024  
 **Version:** 1.0
 
-Thank you for contributing to SecureVent! 
+Thank you for contributing to PixelCloak! 
