@@ -12,7 +12,7 @@ public class Steganography {
         byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
         int len = messageBytes.length;
 
-        // Check if image is big enough: 3 channels (RGB) * Width * Height = Total Bits Available
+        // Check if image is big enough
         // We need 32 bits (header) + (message length * 8) bits
         long requiredBits = 32L + (len * 8L);
         long availableBits = (long) image.getWidth() * image.getHeight() * 3;
@@ -50,12 +50,12 @@ public class Steganography {
 
         // Safety check: Don't try to allocate massive arrays if reading garbage
         if (len < 0 || len > image.getWidth() * image.getHeight() * 3 / 8) {
-            // This usually happens if you try to "reveal" an image that has no secret data
-            return null;
+            
+            return null;// this is if the reveal button is cleaked when there is nothing to reveal
         }
 
-        // 2. Extract the actual message content
-        // We read (4 + len) bytes to keep offsets simple, then substring the result
+        //  Extract the actual message content
+        
         byte[] allData = extractBytes(image, 4 + len);
         if (allData == null) return null;
 
@@ -71,9 +71,6 @@ public class Steganography {
 
         // Use a copy of the image to avoid modifying the original UI reference unexpectedly
         BufferedImage newImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        // Note: For simplicity in this specific project, we can modify in place,
-        // but creating a copy is often safer for "Undo" functionality.
-        // If you prefer modifying the original, just remove the line above and 'Graphics' copy below.
 
         java.awt.Graphics g = newImage.getGraphics();
         g.drawImage(image, 0, 0, null);
@@ -109,7 +106,7 @@ public class Steganography {
                     }
                 }
 
-                // Pack colors back into pixel (Alpha is forced to 255/opaque for RGB images)
+                // Pack colors back into pixel 
                 int newPixel = (0xFF << 24) | (red << 16) | (green << 8) | blue;
                 newImage.setRGB(x, y, newPixel);
             }

@@ -1,64 +1,69 @@
-# PixelCloak - Steganographic Journal 
+# PixelCloak — Steganographic Journal (local desktop)
 
-PixelCloak is a desktop application that allows you to hide encrypted journal entries within images using steganography. It provides a secure and private way to maintain a personal diary, with a "duress" feature for added security.
+PixelCloak lets you encrypt and hide short journal entries inside PNG images using authenticated AES-256 encryption and LSB steganography. The app is local-first: UI and crypto run in Java; a small Python helper is used for image entropy analysis.
 
-The project consists of a Java Swing frontend for the user interface and a Python backend for image analysis.
-
-## Project Structure
+## Repository layout (high level)
 
 ```
 PixelCloak/
-├── backend/
-│   ├── src/
-│   └── ... (see backend/README.md for details)
-├── frontend/
-│   ├── src/
-│   └── ... (see frontend/README.md for details)
-└── README.md
+├── frontend/      # Java Swing UI (entry: com.pixelcloak.app.App)
+├── backend/       # Core Java library (AESCrypto, Steganography, ImageAnalyzer)
+├── scripts/       # Python helper: analyze_image.py
+└── docs/          # documentation
 ```
 
 ## Features
 
--   **AES-256 Encryption:** Uses AES-GCM (Galois/Counter Mode) with PBKDF2 key derivation (600,000 iterations) to secure your text.
--   **LSB Steganography:** Embeds encrypted data into the Least Significant Bits of the image pixels, making it invisible to the naked eye.
--   **Image Entropy Analysis:** A Python backend analyzes images to ensure they are complex enough for secure data hiding.
--   **Modern Swing UI:** A calming, book-themed interface for a pleasant user experience.
+- AES-256-GCM encryption with PBKDF2 key derivation (600,000 iterations).
+- LSB steganography across RGB channels; payloads stored with a 4-byte length prefix.
+- Python-based entropy check (`scripts/analyze_image.py`) to help avoid embedding into low-entropy images.
+- Duress/decoy behavior in the UI (configurable in the frontend).
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
+- Java 17+ (JDK)
+- Maven 3.6+
+- Python 3.8+ (for the analyzer)
+- `pip` to install Python dependencies (Pillow)
 
--   Java 17+ (JDK)
--   Maven 3.6+
--   Python 3.10+
--   IntelliJ IDEA: Recommended IDE for running this project.
+## Quick start (development)
 
-### Installation and Setup
+1. Install Python dependency used by the analyzer:
 
-**1.**Configure Python Environment
-The application requires the Python `Pillow` library to perform image analysis. 
-Open your terminal and run
 ```bash
-pip install pillow
+pip install Pillow
 ```
 
-### Running the Application
+2. Build the Java modules (from repository root):
 
-The application is composed of two main parts: the Java frontend and the Python backend. The frontend calls the backend for image analysis.
+```bash
+cd backend
+mvn clean install
+cd ../frontend
+mvn clean package
+```
 
-**1. Setup the Backend**
+3. Run the frontend (from `frontend`):
 
-Navigate to the backend directory and install the required Python packages. Remember to activate the virtual environment first (`venv\Scripts\activate` on Windows or `source venv/bin/activate` on macOS/Linux).
+```bash
+mvn exec:java -Dexec.mainClass="com.pixelcloak.app.App"
+```
 
+Notes:
+- The frontend will call the Python helper for entropy analysis. The script is `scripts/analyze_image.py` and prints a single pipe-delimited result line such as `SAFE|5.87` or `UNSAFE|3.22`.
+- The Java `ImageAnalyzer` implementation currently references an absolute `pythonPath` (example: `C:\\Python313\\python.exe`). If the analyzer fails to run, either ensure that path exists or update `backend/src/main/java/com/pixelcloak/core/ImageAnalyzer.java` to point to a valid Python executable (or to use the `python` on PATH).
 
-The Java application will launch, and it will automatically call the Python script for image analysis when needed. Ensure that the `python` command is available in your system's PATH.
+## Running from a packaged jar
 
-## Detailed Documentation
+If you package the frontend into a jar, run the main class `com.pixelcloak.app.App`. Using `mvn exec:java` is the simplest development method.
 
-For more detailed information on each component, please refer to their respective README files:
+## Documentation
 
--   **Frontend README**
--   **Backend README**
+See the module READMEs for more details:
+- Frontend: `frontend/README.md`
+- Backend: `backend/README.md`
+- Development notes and API: `docs/`
 
 ---
-**Last Updated:** December 2025
+
+**Last Updated:** December 18, 2025

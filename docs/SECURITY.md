@@ -1,141 +1,88 @@
-# PixelCloak Security Analysis
+# PixelCloak Security Summary
 
 ## Executive Summary
 
-PixelCloak is designed with a **Zero-Trust** security stance:
-- ✓ No network communication (air-gapped)
-- ✓ No cloud dependencies
-- ✓ Military-grade encryption (AES-256-GCM)
-- ✓ Authenticated Encryption (AEAD)
+PixelCloak is a local-first desktop application. Key security characteristics:
+- No network communication by design
+- No cloud dependencies
+- Encryption uses AES-256-GCM (authenticated encryption)
 
 ## Cryptographic Foundation
 
-### AES-256-GCM Encryption
+### AES-256-GCM (current implementation)
 
-**Standard:** FIPS 197 (Advanced Encryption Standard)
+Key implementation parameters (as in `backend/src/main/java/com/pixelcloak/core/AESCrypto.java`):
+- Key derivation: `PBKDF2WithHmacSHA256`, iterations = 600_000
+- Salt: 16 bytes (random per-encryption)
+- Symmetric cipher: `AES/GCM/NoPadding` (AES-256-GCM)
+- IV length: 12 bytes (random per-encryption)
+- Authentication tag: 128 bits
 
-**Key Properties:**
-- **Key Size:** 256 bits (2^256 possible keys)
-- **Mode:** GCM (Galois/Counter Mode)
-- **Key Derivation:** PBKDF2-HMAC-SHA256 (600,000 iterations)
-- **Integrity:** 128-bit Authentication Tag
+Notes:
+- The `encrypt()` method returns a Base64 string containing `Salt || IV || Ciphertext` which is what the UI embeds into images.
+- High PBKDF2 iteration counts slow brute-force attacks but increase CPU cost on low-power devices.
 
-**Resistance to Attacks:**
-- **Brute Force:** Computationally infeasible
-- **Chosen-Ciphertext:** GCM prevents tampering via auth tag
-- **Rainbow Tables:** Mitigated by unique 16-byte Salt per encryption
+### Steganography (current implementation)
 
-### Steganographic Concealment
+Implementation details (see `backend/src/main/java/com/pixelcloak/core/Steganography.java`):
+- Payload format: 4-byte big-endian length header followed by payload bytes.
+- Payload content: UTF-8 bytes of the Base64-encoded encrypted blob returned by `AESCrypto.encrypt(...)`.
+- Embedding: LSBs across channels in RGB order (red, green, blue), effectively 3 bits per pixel.
+- The code uses a copied `BufferedImage` (`TYPE_INT_RGB`) before modifying pixels to avoid mutating UI references.
 
-**Algorithm:** Least Significant Bit (LSB) Replacement
+Capacity:
+- Available bits = `width * height * 3`
+- Practical payload bytes ≈ `(width * height * 3) / 8 - 4` (accounting for the 4-byte header)
 
-**Implementation:**
-- **Channels:** Red, Green, Blue (3 bits per pixel)
-- **Header:** 32-bit length prefix (embedded in LSBs)
+## Analyzer & IPC
 
-**Mathematical Guarantee:**
-```
-Color Difference = 1/255 ≈ 0.4%
-Human Eye Threshold ≈ 2-3%
-Result: Invisible to human perception
-```
+- The image entropy helper is `scripts/analyze_image.py`. It converts images to grayscale and computes Shannon entropy over 256 intensity bins.
+- The helper prints a single pipe-delimited result line, e.g. `SAFE|5.87` or `UNSAFE|3.22`. The Java `ImageAnalyzer` reads the first line and treats lines starting with `SAFE` as acceptable.
+- `ImageAnalyzer` currently references a hardcoded Python executable path (`C:\\Python313\\python.exe`) — this may need to be configured per system.
 
-## Threat Model
+## Threat Model & Mitigations
 
-### Digital Threats
+Unauthorized access / brute force:
+- Mitigation: AES-256-GCM with PBKDF2-derived keys; recommend long, high-entropy passwords (12+ characters).
 
-#### Unauthorized Access (Hacking)
-**Mitigation:**
-- ✓ Strong encryption (AES-256)
-- ✓ Random IV prevents pattern analysis
-- ✓ Passwords never stored (only hashed key)
+Tampering / integrity:
+- Mitigation: GCM authentication tag detects modifications; decryption will fail with an AEADBadTagException if data or associated parameters are tampered with.
 
-#### Malware / Keylogger
-**Mitigation:**
-- ✓ Java memory management
-- ✓ Use of `char[]` arrays for passwords
-- ✓ Passwords overwritten after use
+Local compromise (malware/keylogger):
+- Mitigation: minimize password lifetime in memory, overwrite `char[]` after use, and avoid logging secrets.
+- Limitation: an attacker with administrative access can read process memory or intercept keystrokes.
 
-**Limitation:** Determined attacker with root access can dump process memory
+Forensic detection of hidden data:
+- Mitigation: entropy checks block embedding into low-entropy images; however, skilled forensic analysis may still detect steganographic payloads. Do not assume perfect undetectability.
 
-#### Forensic Analysis
-**Mitigation:**
-- ✓ Entropy analysis ensures hidden data blends with noise
-- ✓ LSB blending with natural image compression artifacts
-- ✓ No headers/signatures revealing data presence
+Duress feature:
+- The UI implements a panic/duress behavior: entering the configured panic code (currently the char sequence `{'1','2','3','4'}`) returns a decoy text instead of attempting decryption. Review and configure this behavior to match your threat model.
 
-#### Brute-Force Password Attack
-**Mitigation:**
-- ✓ AES-256 provides 2^256 possible keys
-- ✓ Recommend 12+ character passwords with mixed case, numbers, symbols
+## Memory Safety & Handling Secrets
 
-### Physical Threats
+Current practices and recommendations:
+- Use `char[]` for password input (avoids Java String immutability exposing secrets).
+- Clear password arrays immediately after use (e.g., `Arrays.fill(passwordChars, '\0')`). The UI currently overwrites password arrays in places; ensure all code paths clear sensitive buffers.
+- Avoid converting secret `char[]` to `String` or logging any intermediate values.
+- Use `SecureRandom` for salt and IV generation (code uses `SecureRandom`).
 
-#### Device Theft
-**Mitigation:**
-- ✓ All data encrypted with user's password
-- ✓ Without password, image appears normal
-- ✓ No metadata reveals data presence
+## Operational Recommendations
 
-### Operational Threats
+- Make the Python executable path configurable in `ImageAnalyzer` or detect `python` on PATH to avoid hardcoded absolute paths.
+- Consider reducing PBKDF2 iterations for constrained environments or using adaptive iteration counts with a configurable parameter.
+- Add a secure wipe function for any byte[] or char[] buffers that hold plaintext or intermediate values.
+- Add optional HMAC or external metadata if you need tamper-evidence beyond GCM (careful with key management).
 
-#### Weak Password
-**Mitigation:**
-- Enforce password complexity
-- Recommend: ≥ 12 characters, mixed case, numbers, symbols
+## Limitations
 
-#### Image Tampering
-**Mitigation:** AES-GCM Authentication Tag
-- Any modification to the hidden bits causes decryption to fail (AEADBadTagException).
-- Ensures data integrity without external hashes.
+- PixelCloak does not provide full-disk encryption or protection against a fully-compromised host.
+- Steganography reduces detectability but is not guaranteed to be undetectable by advanced forensic tools.
 
-## Memory Safety
+## Incident Response & Audits
 
-### Sensitive Data Handling
-
-**Password Protection:**
-- Store passwords in `char[]` arrays, not String objects (which are immutable)
-- Overwrite char arrays with zeros immediately after use
-- Clear all intermediate encryption/decryption arrays with zeros
-- Never log passwords or keys to console/files
-
-**Example:** After extracting password from UI field, pass to crypto operation, then zero the array
-
-**Best Practices:**
-1. Use Java's `Arrays.fill(charArray, '\0')` to securely clear
-2. Process passwords directly without intermediate conversions
-3. Minimize password lifetime in memory
-4. Use SecureRandom for IV/salt generation
-
-## Compliance
-
-### Standards Compliance
-- ✅ FIPS 197 (AES)
-- ✅ NIST SP 800-38D (GCM mode)
-- ✅ NIST SP 800-132 (PBKDF2)
-- ✅ OWASP Top 10
-- ✅ GDPR compliant
-
-### Limitations
-
-PixelCloak is **NOT**:
-- A substitute for full-disk encryption
-- Protected against determined nation-state adversaries
-- A replacement for legal confidentiality protections
-
-## Recommendations
-
-### For Users
-1. **Use Strong Passwords** – 12+ characters, mixed case, numbers, symbols
-2. **Keep Your Computer Secure** – OS/antivirus updates, avoid untrusted software
-3. **Back Up Your Password** – Use password manager or secure location
-
-### For Developers
-1. **Code Audits** – Regular security reviews
-2. **Penetration Testing** – Engage ethical hackers
-3. **Incident Response** – Document vulnerabilities responsibly
+- Perform regular code audits and cryptographic reviews when changing crypto primitives.
+- If a vulnerability is found, rotate any affected guidance and document mitigation steps.
 
 ---
 
-**Last Updated:** December 2024
-**Review Cycle:** Every 6 months
+**Last Updated:** December 18, 2025

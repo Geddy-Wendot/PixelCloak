@@ -23,7 +23,7 @@ public class AESCrypto {
     private static final int ITERATION_COUNT = 600_000;
 
     public static String encrypt(String text, char[] password) throws Exception {
-        // FIXED: Changed 'plainText' to 'text' to match the parameter name
+        //  Change 'plainText' to 'text' to match the parameter name
         if (text == null || text.isEmpty()) return null;
 
         // 1. Generate Random Salt and IV
@@ -42,7 +42,7 @@ public class AESCrypto {
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
 
-        // FIXED: Changed 'plainText' to 'text'
+        // Change 'plainText' to 'text'
         byte[] cipherText = cipher.doFinal(text.getBytes(StandardCharsets.UTF_8));
 
         // 4. Combine Salt + IV + CipherText
@@ -55,14 +55,13 @@ public class AESCrypto {
     }
 
     public static String decrypt(String encrypted, char[] password) throws Exception {
-        // FIXED: Changed 'encryptedData' to 'encrypted' to match the parameter name
+        
         if (encrypted == null || encrypted.isEmpty()) return null;
 
-        // FIXED: Changed 'encryptedData' to 'encrypted'
         byte[] decode = Base64.getDecoder().decode(encrypted);
         ByteBuffer byteBuffer = ByteBuffer.wrap(decode);
 
-        // 1. Extract Salt and IV
+        //  Extract Salt and IV
         if (byteBuffer.remaining() < SALT_LENGTH + GCM_IV_LENGTH) {
             throw new IllegalArgumentException("Invalid encrypted data format");
         }
@@ -73,14 +72,14 @@ public class AESCrypto {
         byte[] iv = new byte[GCM_IV_LENGTH];
         byteBuffer.get(iv);
 
-        // 2. Extract CipherText
+        //  Extract CipherText
         byte[] cipherText = new byte[byteBuffer.remaining()];
         byteBuffer.get(cipherText);
 
-        // 3. Derive Key
+        //  Derive Key
         SecretKey secretKey = deriveKey(password, salt);
 
-        // 4. Decrypt
+        //  Decrypt
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);

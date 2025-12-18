@@ -14,8 +14,6 @@ public class ImageAnalyzer {
                 return false;
             }
 
-            // --- CRITICAL FIX: Use the full path you found earlier ---
-            // Replace this string with YOUR specific path: "C:\\Python313\\python.exe"
             String pythonPath = "C:\\Python313\\python.exe";
 
             ProcessBuilder pb = new ProcessBuilder(pythonPath, scriptFile.getAbsolutePath(), imageFile.getAbsolutePath());
@@ -26,7 +24,7 @@ public class ImageAnalyzer {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line = reader.readLine();
 
-            // Read all lines if there are multiple (useful for debugging errors)
+            // Read all lines if there are multiple 
             StringBuilder fullOutput = new StringBuilder();
             if (line != null) fullOutput.append(line);
 
@@ -36,7 +34,7 @@ public class ImageAnalyzer {
 
             process.waitFor();
 
-            // DEBUGGING: Print exactly what Python said
+           // Print exactly what Python said
             System.out.println("PYTHON SAID: " + fullOutput.toString());
 
             if (line != null && line.startsWith("SAFE")) {

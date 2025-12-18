@@ -1,90 +1,65 @@
-# PixelCloak Backend Development Guide
+# PixelCloak Python Analysis Development Guide
 
-## Python Analysis Engine
-
-This guide covers the Python component responsible for image entropy analysis.
+This guide covers the small Python helper used for image entropy analysis (`scripts/analyze_image.py`). The script lives in the repository `scripts/` directory (not under `backend/`).
 
 ---
 
-## Directory Structure
+## Directory Structure (relevant)
 
 ```
-backend/
-├── src/
-│   └── analyze_image.py      # Main entropy calculator
-├── tests/
-│   └── test_entropy.py       # Unit tests
-├── requirements.txt          # Python dependencies
-└── README.md                 # Documentation
+scripts/
+└── analyze_image.py      # Main entropy calculator used by Java via ProcessBuilder
 ```
 
 ---
 
 ## Installation
 
-### 1. Create Virtual Environment
+Recommended: create a virtual environment at the project root and install the minimal dependency.
 
 ```bash
-cd backend
-python -m venv venv
+python -m venv .venv
+# activate (Windows PowerShell)
+.venv\Scripts\Activate.ps1
+# or (POSIX)
+source .venv/bin/activate
+pip install Pillow
 ```
 
-### 2. Activate Virtual Environment
+Optionally add a `requirements.txt` with:
 
-**Windows:**
-```bash
-venv\Scripts\activate
-```
-
-**macOS/Linux:**
-```bash
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**requirements.txt:**
 ```
 Pillow>=9.0.0
-numpy>=1.21.0
-scipy>=1.7.0
-pytest>=7.0.0
 ```
 
 ---
 
 ## Usage
 
-### Command Line
+Run the helper from the project root; the script prints a single pipe-delimited line to stdout:
 
 ```bash
-python src/analyze_image.py path/to/image.png
+python scripts/analyze_image.py path/to/image.png
 ```
 
-**Output (Success):**
-```json
-{
-  "status": "success",
-  "entropy": 5.872,
-  "safe": true,
-  "message": "Image is safe for data hiding"
-}
-```
+Typical one-line outputs:
 
-### Python API
+- `SAFE|<entropy>` (example: `SAFE|5.87`)
+- `UNSAFE|<entropy>` (example: `UNSAFE|3.22`)
+- `ERROR|...` (diagnostic when the script fails, e.g., missing library or bad path)
+
+### Python API (local use)
 
 ```python
 from scripts.analyze_image import calculate_entropy
 
-entropy = calculate_entropy("path/to/image.png")
-if entropy >= 5.0:
-    print("SAFE for data hiding")
+score = calculate_entropy("path/to/image.png")
+if score < 0:
+    print("Error reading image")
+elif score > 4.5:
+    print("SAFE")
 else:
-    print("UNSAFE - choose a different image")
+    print("UNSAFE")
 ```
 
 ---
@@ -127,17 +102,25 @@ Apply formula: $H = -\sum p(i) \log_2(p(i))$ with epsilon guard to prevent log(0
 
 ## Testing
 
-### Run Unit Tests
+There are currently no Python unit tests included for the entropy helper in this repository.
+
+If you want to add tests, create a `tests/` folder (project root) and use `pytest`. Example:
 
 ```bash
-cd backend
-pytest tests/test_entropy.py -v
+python -m venv .venv
+.venv\Scripts\activate
+pip install pytest Pillow
+pytest -q
 ```
 
-### Test Coverage
+Example test skeleton (place under `tests/test_entropy.py`):
 
-```bash
-pytest tests/test_entropy.py --cov=src
+```python
+from scripts.analyze_image import calculate_entropy
+
+def test_solid_color(tmp_path):
+    # create or copy a solid color fixture and assert entropy == 0
+    assert calculate_entropy(str(tmp_path / "solid.png")) == 0
 ```
 
 ---
@@ -185,5 +168,11 @@ if np.isnan(entropy):
 
 ---
 
-**Last Updated:** December 2024
+Notes & tips:
+- When Java spawns the script via `ProcessBuilder`, ensure the `python` executable used has Pillow installed. The app's reference `ImageAnalyzer` currently uses an absolute path (`C:\\Python313\\python.exe`) which may need updating on your machine.
+- Diagnostic output from the script uses a simple `ERROR|...` prefix; inspect the appended traceback text to see the underlying exception.
+
+---
+
+**Last Updated:** December 18, 2025
 **Python Version:** 3.8+

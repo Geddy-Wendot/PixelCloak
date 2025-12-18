@@ -45,127 +45,127 @@ SAFE|5.87
   "safe": false,
   "message": "Image file not found or corrupted"
 }
-```
+```markdown
+# PixelCloak API Specification
 
-**Response Fields:**
+## Java ↔ Python Interface Contract
 
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | "success" or "error" |
-| entropy | float | Shannon entropy value (0.0-8.0) |
-| safe | boolean | true if entropy ≥ 5.0 |
-| message | string | Human-readable explanation |
-
-## 2. File Format Specifications
-
-### 2.1 PNG Format (Input)
-
-**Requirements:**
-- Format: PNG (RFC 2083)
-- Minimum size: 32×32 pixels
-- Color space: RGB or RGBA
-- Bit depth: 8-bit per channel
-
-**Why PNG?**
-- Lossless (LSB modifications don't degrade image)
-- Widely supported
-- Includes error detection (CRC)
-
-### 2.2 Encrypted Data Format (Hidden in PNG)
-
-**Structure:**
-```
-[IV (16 bytes)] [Ciphertext (variable length)] [Padding (PKCS5)]
-
-Total Size = 16 + ceil(plaintext.length / 16) * 16
-```
-
-## 3. Cryptography Operations
-
-### 3.1 Encryption (AES-256-GCM)
-
-**Process:**
-1. Generate random 16-byte Salt.
-2. Derive 256-bit key from password + Salt using PBKDF2-HMAC-SHA256 (600,000 iterations).
-3. Generate random 12-byte Initialization Vector (IV).
-4. Encrypt plaintext with AES-256-GCM.
-5. Concatenate Salt + IV + Ciphertext (incl. Tag) and Base64 encode.
-
-**Java Entry Point:**
-```java
-AESCrypto.encrypt(plaintext, passwordChars)
- Returns: String (Base64 encoded)
-```
-
-### 3.2 Decryption (AES-256-CBC)
-
-**Process:**
-1. Derive same key from password using SHA-256
-2. Extract first 16 bytes as IV from encrypted data
-3. Extract remaining bytes as ciphertext
-4. Decrypt ciphertext with AES-256-CBC
-5. Return plaintext string
-
-**Java Entry Point:**
-```java
- AESCrypto.decrypt(encrypted, password)
- Returns: String (original plaintext)
-```
-
-## 4. Steganography Operations
-
-### 4.1 LSB Embedding (Hiding Data)
-
-**Process:**
-1. Extract pixel array from image (RGB values)
-2. Iterate through each encrypted data byte
-3. For each bit in the data, replace the LSB of the Blue channel in a pixel
-4. Formula: `New_Blue = (Old_Blue & 0xFE) | Secret_Bit`
-5. Reconstruct image with modified pixels and save
-
-**Capacity:** 1 bit per pixel. Example: 8 MP image ≈ 1 MB capacity
-
-**Java Entry Point:**
-```java
- Steganography.hideData(image, encryptedBytes)
- Returns: BufferedImage with hidden data
-```
-
-### 4.2 LSB Extraction (Revealing Data)
-
-**Process:**
-1. Extract pixel array from image
-2. Iterate through pixels for expected data length
-3. Extract the LSB from Blue channel of each pixel
-4. Reconstruct bytes from extracted LSBs
-5. Pass to AES decryption
-
-**Java Entry Point:**
-```java
- Steganography.extractData(image, dataLength)
- Returns: byte[] (encrypted data)
-```
-
-## 5. Error Codes and Status Messages
-
-### Python Errors
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 100 | File not found | Image path invalid |
-| 101 | File is not a PNG | Wrong format |
-| 102 | Image corrupted | Invalid PNG data |
-| 200 | Entropy too low | < 5.0 |
-
-### Java Errors
-
-| Code | Message | Cause |
-|------|---------|-------|
-| 10 | Invalid password | Decryption failed |
-| 11 | AES error | Cipher initialization failed |
-| 20 | Python not found | ProcessBuilder fails |
-| 21 | Process timeout | Python takes > 5 sec |
+This document describes the runtime contracts between the Java frontend, the core encryption/steganography library, and the Python image-analysis helper script.
 
 ---
 
+## 1. Image Entropy Analysis
+
+### 1.1 Java → Python Invocation
+
+Invocation (example):
+```java
+ProcessBuilder pb = new ProcessBuilder(
+    pythonPath, // typically: C:\\Python313\\python.exe on developer machines
+    "scripts/analyze_image.py",
+    imagePath
+);
+pb.redirectErrorStream(true);
+Process process = pb.start();
+```
+
+Notes:
+- `scripts/analyze_image.py` must be present relative to the application working directory.
+- `pythonPath` is currently hardcoded in the reference `ImageAnalyzer` to `C:\\Python313\\python.exe`.
+
+### 1.2 Python → Java Response
+
+Format: single-line text, pipe-delimited: `SAFE|<entropy>` or `UNSAFE|<entropy>`.
+
+Success example:
+```text
+SAFE|5.87
+```
+
+Failure / diagnostic output: the Python helper may print JSON or plain text for human-readable errors, but the Java helper currently checks the first line for the `SAFE` prefix.
+
+Response fields (convention used by the helper script):
+- `SAFE` / `UNSAFE`: status prefix consumed by `ImageAnalyzer.isImageSafe()`.
+- `<entropy>`: Shannon entropy as a floating point number (typical range 0.0–8.0).
+
+`ImageAnalyzer` behavior in Java:
+- `isImageSafe(File)`: returns `true` when the first line from the Python script starts with `SAFE`.
+- `getEntropyScore(File)`: parses the entropy value from the same pipe-delimited line.
+- Threshold used in UI: `>= 4.5` (checked in `JournalPanel.hideAndSave()`).
+
+## 2. File Format & Hidden Payload Layout
+
+### 2.1 Input Image
+
+- Recommended: PNG (lossless), 8-bit per channel RGB/RGBA.
+- Minimum practical size: 32×32, but usable capacity depends on channels and header overhead.
+
+### 2.2 Encrypted Payload Layout (embedded into image LSBs)
+
+The Java `AESCrypto` implementation encodes the encrypted payload as Base64 of the concatenation:
+
+- Salt (16 bytes)
+- IV (12 bytes)
+- Ciphertext (variable, includes GCM authentication tag)
+
+This Base64 string is what `Steganography.embed(...)` stores into the image (prefixed by a 4-byte length header when embedding bytes).
+
+## 3. Cryptography (current implementation)
+
+Algorithm & parameters (as implemented in `backend/src/.../AESCrypto.java`):
+
+- Key derivation: `PBKDF2WithHmacSHA256`, iterations = `600_000`, Salt = 16 bytes.
+- Symmetric cipher: `AES/GCM/NoPadding` (AES-256-GCM) for both encryption and decryption.
+- IV length: 12 bytes (GCM standard).
+- GCM tag length: 128 bits.
+
+Java API:
+- `AESCrypto.encrypt(String text, char[] password)` → `String` (Base64-encoded Salt|IV|Ciphertext).
+- `AESCrypto.decrypt(String encryptedBase64, char[] password)` → `String` (plaintext).
+
+Security notes:
+- The implementation derives a 256-bit AES key from the provided password and the random salt; the salt is stored with the ciphertext so decryption can re-derive the key.
+- The code currently clears password arrays in the UI after use where possible; care should be taken to avoid logging secrets.
+
+## 4. Steganography (current implementation)
+
+API (Java):
+- `Steganography.embed(BufferedImage image, String message)` → `BufferedImage` (returns a new image with embedded bytes).
+- `Steganography.extract(BufferedImage image)` → `String` (returns the hidden Base64 payload or `null`).
+
+Behavioral details:
+- The implementation encodes a 4-byte big-endian length header followed by the payload bytes.
+- Bits are embedded using LSBs across channels in RGB order (red, green, blue) per pixel.
+- Available capacity (bits) = `width * height * 3`.
+- Practical payload capacity (bytes) ≈ `(width * height * 3) / 8 - 4` (accounting for the 4-byte header).
+
+Example checks in UI:
+- `JournalPanel` computes `maxBytes = (width * height * 3 / 8) - 4` and prevents embedding if the plaintext (post-encryption) exceeds this.
+
+## 5. Frontend Integration Points
+
+Key UI behaviors (found in `frontend`):
+- `LoginPanel`: collects password (`getPassword()`), supports a duress check `isDuress(char[])` which currently returns true for `{'1','2','3','4'}` and triggers a fake todo text when used.
+- `JournalPanel`:
+  - `loadImage()` – lets user pick an image and updates preview.
+  - `hideAndSave()` – runs analysis (`ImageAnalyzer.isImageSafe()`), checks entropy (`getEntropyScore()`), encrypts text with `AESCrypto.encrypt(...)`, then embeds via `Steganography.embed(...)` and saves as PNG.
+  - `revealText()` – extracts payload via `Steganography.extract(...)` and decrypts with `AESCrypto.decrypt(...)`.
+- Duress behavior: entering the panic code (`1234`) returns a fixed dummy todo list instead of performing decryption.
+
+## 6. Errors & Diagnostics
+
+Python helper typical exit/status signals:
+- Prints `SAFE|<entropy>` or `UNSAFE|<entropy>` on stdout for normal analysis results.
+- On failures the script may output diagnostic JSON or text; `ImageAnalyzer` prints the script output to stdout/stderr for inspection.
+
+Java-side error conditions used in the UI:
+- `Invalid password` / decryption failure: surfaced when GCM tag verification fails (AEADBadTagException).
+- `Python not found` / process launch errors: surfaced when `scripts/analyze_image.py` is missing or `pythonPath` is invalid.
+- `Image too simple` / low entropy: `hideAndSave()` enforces a threshold of `4.5`.
+
+---
+
+**Last Updated:** December 18, 2025
+
+```
 **Last Updated:** December 2024

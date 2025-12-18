@@ -45,10 +45,9 @@ public class JournalPanel extends JPanel {
         add(PanelHeader, BorderLayout.NORTH);
 
         // Body: Split pane
-        // Left (Text Area) -> FIXED: Assigned to class field 'textArea', not local 'TextArea'
         textArea = new JTextArea("Write your thoughts here....");
         textArea.setBackground(new Color(33, 37, 43));
-        textArea.setForeground(TEXT_COLOR); // Changed to TEXT_COLOR for better readability
+        textArea.setForeground(TEXT_COLOR); 
         textArea.setCaretColor(Color.WHITE);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
@@ -176,15 +175,15 @@ public class JournalPanel extends JPanel {
 
                 //check score
 
-                // 1. Get the actual score
+                //  Get the actual score
                 double score = com.pixelcloak.core.ImageAnalyzer.getEntropyScore(JournalPanel.this.currentFile);
 
-                // 2. Check logic (Threshold 4.5)
+                //  Check logic (Threshold 4.5)
                 if (score < 4.5) {
                     throw new IllegalStateException("Image too simple (Score: " + String.format("%.2f", score) + "). Needs > 4.5");
                 }
 
-                // 3. Show the score to the user!
+                //  Show the score to the user!
                 setStatus("Analysis Passed! Score: " + String.format("%.2f", score), SUCCESS_COLOR);
                 
                 // Slight delay so user sees the score before encryption starts
@@ -193,7 +192,6 @@ public class JournalPanel extends JPanel {
             
                 setStatus("Encrypting and Embedding...", ACCENT_COLOR);
 
-                // FIXED: Passed both 'text' and 'passwordChar'
                 String encrypted = AESCrypto.encrypt(text, passwordChar);
 
                 // Clear password from memory
@@ -259,7 +257,6 @@ public class JournalPanel extends JPanel {
                     throw new IllegalStateException("No hidden data found or image is corrupt.");
                 }
 
-                // FIXED: Passed both 'encrypted' data and 'passwordChars'
                 String decrypted = AESCrypto.decrypt(encrypted, passwordChars);
 
                 Arrays.fill(passwordChars, ' '); // Clear password

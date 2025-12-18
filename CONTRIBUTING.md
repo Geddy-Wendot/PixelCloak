@@ -114,7 +114,7 @@ Examples:
 
 ### Examples
 
-✓ Good:
+ Good:
 ```
 feat(stego): add support for JPEG steganography
 
@@ -187,10 +187,10 @@ Describe how you tested this change.
 ```
 
 ### 2. Ensure Checks Pass
-- ✅ All tests pass
-- ✅ Code coverage above threshold
-- ✅ No linting errors
-- ✅ CI/CD pipeline successful
+- All tests pass
+- Code coverage above threshold
+- No linting errors
+- CI/CD pipeline successful
 
 ### 3. Request Review
 Tag relevant reviewers for code review.

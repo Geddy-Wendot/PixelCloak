@@ -49,12 +49,7 @@ mvn clean install
 - Salt & IV: Automatically generates random Salt (16 bytes) and IV (12 bytes) for every entry.
 - Storage: Packs [Salt + IV + CipherText] into a single Base64 string.
 
-**Usage:**
-``` java
-char[] pass = "UserPassword123".toCharArray();
-String encrypted = AESCrypto.encrypt("My Secret Diary", pass);
-String decrypted = AESCrypto.decrypt(encrypted, pass);
-```
+
 
 **2. Steganography.java**
 Implements the Least Significant Bit (LSB) algorithm to hide data imperceptibly.
@@ -66,23 +61,19 @@ Implements the Least Significant Bit (LSB) algorithm to hide data imperceptibly.
 **Usage:**
 ```java
 // Hide text
-BufferedImage protectedImage = Steganography.embed(originalImage, encryptedString);
+ if (message == null || image == null) return null;
+ byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+ int len = messageBytes.length;
 
 // Reveal text
-String hiddenData = Steganography.extract(protectedImage);
+byte[] allData = extractBytes(image, 4 + len);
 
 ```
 **3. ImageAnalyzer.java (Validation)**
-Replaces the Python analysis engine. It calculates the complexity of an image to prevent users from hiding data in simple images (like a solid white box) which would make the noise obvious.
+- Acts as the bridge between the java and python engine.
+- outputs the Python analysis engine findings. It advices on the complexity of an image to prevent users from hiding data in simple images (like a solid white box) which would make the noise obvious.
 
-- Method: Calculates Shannon Entropy on grayscale pixel intensity.
-- Threshold: > 4.5 is recommended for safe hiding.
+- It says exactly what the Python analysis says.
 
-**Usage:**
-```java
-boolean isSafe = ImageAnalyzer.isImageSafe(imageFile);
-if (isSafe) {
-    System.out.println("Image is complex enough.");
-}
-```
+
 Last Updated: December 2025 Status: Development.

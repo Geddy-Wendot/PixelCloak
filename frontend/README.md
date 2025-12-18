@@ -86,24 +86,6 @@ public class App {
 public static BufferedImage embed(BufferedImage image, String message)
 public static String extract(BufferedImage image)
 ```
-
-### 7. AESCrypto.java (Encryption)
-**Purpose:** AES-256-CBC encryption and decryption
-
-**Methods:**
-```java
-public byte[] encrypt(String plaintext, String password)
-public String decrypt(byte[] encrypted, String password)
-```
-
-### 8. ImageAnalyzer.java (Python Bridge)
-**Purpose:** Call Python entropy analyzer
-
-**Methods:**
-```java
-public AnalysisResult analyzeImage(File imageFile)
-```
-
 ---
 
 ## UI Styling
@@ -117,28 +99,6 @@ public AnalysisResult analyzeImage(File imageFile)
 
 ---
 
-## Threading Model
-
-### Swing EDT
-All UI updates must occur on the Event Dispatch Thread (EDT):
-```java
-SwingUtilities.invokeLater(() -> {
-    journalPanel.setText("Updated text");
-});
-```
-
-### Background Tasks
-Long operations run on separate threads:
-```java
-new Thread(() -> {
-    AnalysisResult result = imageAnalyzer.analyzeImage(file);
-    SwingUtilities.invokeLater(() -> {
-        displayResult(result);
-    });
-}).start();
-```
-
----
 
 ## Testing
 
